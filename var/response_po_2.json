@@ -1,0 +1,69 @@
+{
+  "payload": {
+    "purchaseOrderNumber": "mock-purchaseOrderNumber",
+    "orderDetails": {
+      "purchaseOrderDate": "2019-07-26T11:10:00Z",
+      "purchaseOrderType": "RegularOrder",
+      "paymentMethod": "Invoice",
+      "buyingParty": {
+        "partyId": "ABCD"
+      },
+      "sellingParty": {
+        "partyId": "999US"
+      },
+      "shipToParty": {
+        "partyId": "ABCD"
+      },
+      "billToParty": {
+        "partyId": "ABCD"
+      },
+      "items": [
+        {
+          "itemSequenceNumber": "00001",
+          "amazonProductIdentifier": "B0748G1ABC",
+          "vendorProductIdentifier": "0017817748000",
+          "orderedQuantity": {
+            "amount": 37,
+            "unitOfMeasure": "Eaches",
+            "unitSize": 1
+          },
+          "isBackOrderAllowed": false,
+          "netCost": {
+            "amount": "14162.00",
+            "currencyCode": "INR"
+          }
+        },
+        {
+          "itemSequenceNumber": "00002",
+          "amazonProductIdentifier": "B0748JMABC",
+          "vendorProductIdentifier": "0017817748000",
+          "orderedQuantity": {
+            "amount": 24,
+            "unitOfMeasure": "Eaches",
+            "unitSize": 1
+          },
+          "isBackOrderAllowed": false,
+          "netCost": {
+            "amount": "14162.00",
+            "currencyCode": "INR"
+          }
+        },
+        {
+          "itemSequenceNumber": "00003",
+          "amazonProductIdentifier": "B076SDSABC",
+          "vendorProductIdentifier": "0017817755000",
+          "orderedQuantity": {
+            "amount": 1,
+            "unitOfMeasure": "Eaches",
+            "unitSize": 1
+          },
+          "isBackOrderAllowed": false,
+          "netCost": {
+            "amount": "14162.00",
+            "currencyCode": "INR"
+          }
+        }
+      ]
+    }
+  }
+}
