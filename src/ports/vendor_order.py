@@ -1,5 +1,5 @@
 import json
-from lib.vendor_item import VendorItem
+from ports.vendor_item import VendorItem
 
 class VendorOrder:
     def __init__(self, order):

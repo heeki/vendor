@@ -20,6 +20,7 @@ class Requestor:
         self.auth_client_secret = creds["client_secret"]
         self.aws_access_key_id = creds["aws_access_key_id"]
         self.aws_secret_access_key = creds["aws_secret_access_key"]
+        self.aws_session_token = creds["aws_session_token"]
         self.credentials = self._get_access_token()
 
     def _request(self, url, method="GET", headers=[], data=None):
@@ -42,7 +43,8 @@ class Requestor:
             print(json.dumps({
                 "code": e.code,
                 "reason": str(e.reason),
-                "headers": str(e.headers).rstrip().split("\n")
+                "headers": str(e.headers).rstrip().split("\n"),
+                "message": e.read().decode("utf-8")
             })) if self.debug else None
         return response
 
@@ -50,12 +52,14 @@ class Requestor:
         url = "https://api.amazon.com/auth/o2/token"
         method = "POST"
         headers = {
-            "content-type": "application/x-www-form-urlencoded"
+            "content-type": "application/x-www-form-urlencoded;charset=UTF-8"
         }
-        data = "grant_type={}".format(self.auth_grant_type)
-        data += "&refresh_token={}".format(self.auth_refresh_token)
-        data += "&client_id={}".format(self.auth_client_id)
-        data += "&client_secret={}".format(self.auth_client_secret)
+        data = "&".join([
+            "grant_type={}".format(self.auth_grant_type),
+            "refresh_token={}".format(self.auth_refresh_token),
+            "client_id={}".format(self.auth_client_id),
+            "client_secret={}".format(self.auth_client_secret)
+        ])
         ts_requested = datetime.now()
         response = self._request(url, method, headers, data.encode("utf-8"))
         credentials = json.loads(response.read().decode("utf-8"))
@@ -68,7 +72,6 @@ class Requestor:
     def _construct_headers(self, host, timestamp):
         headers = {
             "host": host,
-            # "accept": "application/json",
             "user-agent": "CPGDL/0.1 (Language=Python 3.8.9; Platform=Catalina 10.15.7)",
             "x-amz-access-token": self.credentials["access_token"],
             "x-amz-date": timestamp.strftime('%Y%m%dT%H%M%SZ')
@@ -76,10 +79,8 @@ class Requestor:
         return headers
 
     def _construct_params(self, data):
-        params = ""
-        for pkey in data:
-            params += "{}={}&".format(pkey, data[pkey])
-        params = params[:-1]
+        params = "&".join(["{}={}".format(pkey, data[pkey]) for pkey in sorted(data)])
+        params = params.replace(":", "%3A")
         return params
 
     def request(self, host, path, method, params, data):
@@ -87,12 +88,15 @@ class Requestor:
         headers = self._construct_headers(host, now)
         params = self._construct_params(params)
         signer = Signer(self.region, self.service, self.signed_headers, self.aws_access_key_id, self.aws_secret_access_key)
-        signature = signer.create_signature(method, host, path, params, headers, data, now)
+        signature = signer.create_signature(method, path, params, headers, data, now)
+        print(json.dumps(signature)) if self.debug else None
+        if self.aws_session_token != "":
+            headers["x-amz-security-token"] = self.aws_session_token
         headers["Authorization"] = signature["header"]
         print(json.dumps(headers, cls=DateTimeEncoder)) if self.debug else None
         if path == "/":
             url = "https://{}?{}".format(host, params)
         else:
-            url = "https://{}/{}?{}".format(host, path, params)
+            url = "https://{}{}?{}".format(host, path, params)
         response = self._request(url, method=method, headers=headers)
         return response

@@ -28,15 +28,10 @@ class Signer:
         return signing_key
 
     def _stringify(self, data, is_headers=False):
-        output = ""
-        for datum in data:
-            output += "{}\n".format(datum)
-        if is_headers:
-            return output
-        else:
-            return output.rstrip("\n")
+        output = "".join(["{}\n".format(datum) for datum in data])
+        return output if is_headers else output.rstrip("\n")
 
-    def create_signature(self, method, host, path, params, headers, data, now):
+    def create_signature(self, method, path, params, headers, data, now):
         timestamp = now.strftime('%Y%m%dT%H%M%SZ')
         datestamp = now.strftime('%Y%m%d')
         interim = ["{}:{}".format(header, headers[header]) for header in headers]
@@ -51,7 +46,7 @@ class Signer:
             payload_hash
         ])
         signing_key = self._get_signing_key(datestamp)
-        credential_scope = "{}/{}/{}/aws4_request".format(datestamp, self.region, self.service)
+        credential_scope = "/".join([datestamp, self.region, self.service, "aws4_request"])
         string_to_sign = self._stringify([
             self.algorithm,
             timestamp,
@@ -62,6 +57,7 @@ class Signer:
         header = "{} Credential={}/{}, SignedHeaders={}, Signature={}".format(self.algorithm, self.access_key, credential_scope, self.signed_headers, signature)
         output = {
             "canonical_request": canonical_request,
+            "string_to_sign": string_to_sign,
             "signature": signature,
             "header": header
         }
