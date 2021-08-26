@@ -1,7 +1,7 @@
 import argparse
 import json
 import unittest
-from lib.vendor_order import VendorOrder
+from ports.vendor_order import VendorOrder
 
 class VendorOrderTest(unittest.TestCase):
     @classmethod

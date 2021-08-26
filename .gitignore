@@ -7,4 +7,5 @@ src/*/__pycache__
 tmp
 
 # files
+iac/*_output.yaml
 notes.md

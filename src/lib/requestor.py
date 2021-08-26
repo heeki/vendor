@@ -1,102 +1,89 @@
+import boto3
 import json
-import urllib.request
-from datetime import datetime, timedelta
+import os
+import requests
+# from datetime import datetime, timedelta
 from lib.encoders import DateTimeEncoder
-from lib.sigv4 import Signer
+from requests_aws4auth import AWS4Auth
 
 class Requestor:
-    def __init__(self, config, creds):
+    def __init__(self):
         # debug
         self.debug = True
-        # config
-        self.region = config["region"]
-        self.service = config["service"]
-        self.signed_headers = config["signed_headers"]
-        # credentials
-        self.auth_grant_type = creds["grant_type"]
-        self.auth_refresh_token = creds["refresh_token"]
-        self.auth_app_id = creds["app_id"]
-        self.auth_client_id = creds["client_id"]
-        self.auth_client_secret = creds["client_secret"]
-        self.aws_access_key_id = creds["aws_access_key_id"]
-        self.aws_secret_access_key = creds["aws_secret_access_key"]
-        self.aws_session_token = creds["aws_session_token"]
-        self.credentials = self._get_access_token()
+        # aws config
+        self.account_id = os.environ.get("ACCOUNT_ID")
+        self.role_name = os.environ.get("ROLE_NAME", "vendor")
+        self.role_arn = "arn:aws:iam::{}:role/{}".format(self.account_id, self.role_name)
+        self.region = os.environ.get("REGION")
+        self.service = os.environ.get("SERVICE")
+        # aws sessions
+        session = boto3.session.Session() if "AWS_LAMBDA_FUNCTION_NAME" in os.environ else boto3.session.Session(profile_name=self.role_name)
+        client = session.client("sts")
+        response = client.assume_role(
+            RoleArn=self.role_arn,
+            RoleSessionName="vendor_session"
+        )
+        self.aws_access_key_id = response["Credentials"]["AccessKeyId"]
+        self.aws_secret_access_key = response["Credentials"]["SecretAccessKey"]
+        self.aws_session_token = response["Credentials"]["SessionToken"]
+        assumed = boto3.session.Session(
+            aws_access_key_id=self.aws_access_key_id,
+            aws_secret_access_key=self.aws_secret_access_key,
+            aws_session_token=self.aws_session_token,
+            region_name=self.region
+        )
+        # app credentials
+        client = assumed.client("secretsmanager")
+        self.auth_grant_type = "refresh_token"
+        self.auth_refresh_token = self._get_secret(client, "/vendor/refresh_token")
+        self.auth_app_id = self._get_secret(client, "/vendor/app_id")
+        self.auth_client_id = self._get_secret(client, "/vendor/client_id")
+        self.auth_client_secret = self._get_secret(client, "/vendor/client_secret")
+        self.auth_credentials = self._get_access_token()
 
-    def _request(self, url, method="GET", headers=[], data=None):
-        response = {
-            "url": url,
-            "method": method,
-            "headers": headers,
-            "data": data
-        }
-        if data is not None:
-            request = urllib.request.Request(url, data=data)
-        else:
-            request = urllib.request.Request(url)
-        request.method = method
-        for header in headers:
-            request.add_header(header, headers[header])
-        try:
-            response = urllib.request.urlopen(request)
-        except urllib.error.HTTPError as e:
-            print(json.dumps({
-                "code": e.code,
-                "reason": str(e.reason),
-                "headers": str(e.headers).rstrip().split("\n"),
-                "message": e.read().decode("utf-8")
-            })) if self.debug else None
-        return response
+    def _get_secret(self, client, secret_id):
+        response = client.get_secret_value(
+            SecretId=secret_id
+        )
+        return response["SecretString"]
 
     def _get_access_token(self):
         url = "https://api.amazon.com/auth/o2/token"
-        method = "POST"
         headers = {
-            "content-type": "application/x-www-form-urlencoded;charset=UTF-8"
+            "content-type": "application/json"
         }
-        data = "&".join([
-            "grant_type={}".format(self.auth_grant_type),
-            "refresh_token={}".format(self.auth_refresh_token),
-            "client_id={}".format(self.auth_client_id),
-            "client_secret={}".format(self.auth_client_secret)
-        ])
-        ts_requested = datetime.now()
-        response = self._request(url, method, headers, data.encode("utf-8"))
-        credentials = json.loads(response.read().decode("utf-8"))
-        ts_expiry = ts_requested + timedelta(seconds=credentials["expires_in"])
-        credentials["ts_requested"] = ts_requested
-        credentials["ts_expiry"] = ts_expiry
+        data = json.dumps({
+            "grant_type": self.auth_grant_type,
+            "refresh_token": self.auth_refresh_token,
+            "client_id": self.auth_client_id,
+            "client_secret": self.auth_client_secret
+        }).encode("utf-8")        
+        response = requests.post(url, headers=headers, data=data)
+        credentials = json.loads(response.text)
         print(json.dumps(credentials, cls=DateTimeEncoder)) if self.debug else None
         return credentials
 
-    def _construct_headers(self, host, timestamp):
+    def request(self, url, params):
+        # configure headers
         headers = {
-            "host": host,
+            "accept": "application/json",
+            "content-type": "application/json",
             "user-agent": "CPGDL/0.1 (Language=Python 3.8.9; Platform=Catalina 10.15.7)",
-            "x-amz-access-token": self.credentials["access_token"],
-            "x-amz-date": timestamp.strftime('%Y%m%dT%H%M%SZ')
+            # "x-amz-date": datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')
+            "x-amz-access-token": self.auth_credentials["access_token"]
         }
-        return headers
-
-    def _construct_params(self, data):
-        params = "&".join(["{}={}".format(pkey, data[pkey]) for pkey in sorted(data)])
-        params = params.replace(":", "%3A")
-        return params
-
-    def request(self, host, path, method, params, data):
-        now = datetime.utcnow()
-        headers = self._construct_headers(host, now)
-        params = self._construct_params(params)
-        signer = Signer(self.region, self.service, self.signed_headers, self.aws_access_key_id, self.aws_secret_access_key)
-        signature = signer.create_signature(method, path, params, headers, data, now)
-        print(json.dumps(signature)) if self.debug else None
-        if self.aws_session_token != "":
-            headers["x-amz-security-token"] = self.aws_session_token
-        headers["Authorization"] = signature["header"]
         print(json.dumps(headers, cls=DateTimeEncoder)) if self.debug else None
-        if path == "/":
-            url = "https://{}?{}".format(host, params)
-        else:
-            url = "https://{}{}?{}".format(host, path, params)
-        response = self._request(url, method=method, headers=headers)
-        return response
+
+        # configure auth
+        print(json.dumps({
+            "aws_access_key_id": self.aws_access_key_id,
+            "aws_secret_access_key": self.aws_secret_access_key,
+            "aws_session_token": self.aws_session_token,
+            "region": self.region,
+            "service": self.service
+        })) if self.debug else None
+        auth = AWS4Auth(self.aws_access_key_id, self.aws_secret_access_key, self.region, self.service, session_token=self.aws_session_token)
+
+        # send request
+        response = requests.get(url, params=params, headers=headers, auth=auth)
+        return response.text
