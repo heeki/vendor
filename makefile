@@ -15,3 +15,9 @@ secrets.package:
 	sam package -t ${SECRETS_TEMPLATE} --output-template-file ${SECRETS_OUTPUT} --s3-bucket ${S3BUCKET}
 secrets.deploy:
 	sam deploy -t ${SECRETS_OUTPUT} --stack-name ${SECRETS_STACK} --parameter-overrides ${SECRETS_PARAMS} --capabilities CAPABILITY_NAMED_IAM
+
+ddb: ddb.package ddb.deploy
+ddb.package:
+	sam package -t ${DDB_TEMPLATE} --output-template-file ${DDB_OUTPUT} --s3-bucket ${S3BUCKET}
+ddb.deploy:
+	sam deploy -t ${DDB_OUTPUT} --stack-name ${DDB_STACK} --parameter-overrides ${DDB_PARAMS} --capabilities CAPABILITY_NAMED_IAM

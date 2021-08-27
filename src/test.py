@@ -52,6 +52,21 @@ class VendorOrderTest(unittest.TestCase):
             orders.append(order.to_dict())
         self.assertEqual(self.vendor_orders["payload"]["orders"], orders)
 
+    def test_persist(self):
+        order = VendorOrder(self.vendor_order_1["payload"])
+        order.persist()
+        validate = order.retrieve(order.purchase_order_number, order.purchase_order_state)
+        self.assertEqual(self.vendor_order_1["payload"], validate)
+
+    def test_persist_multi(self):
+        orders = []
+        for order in self.vendor_orders["payload"]["orders"]:
+            order = VendorOrder(order)
+            order.persist()
+            validate = order.retrieve(order.purchase_order_number, order.purchase_order_state)
+            orders.append(validate)
+        self.assertEqual(self.vendor_orders["payload"]["orders"], orders)
+
 def main():
     suite = unittest.TestSuite()
     suite.addTest(VendorOrderTest("test_vendor_order_1"))
@@ -60,6 +75,8 @@ def main():
     suite.addTest(VendorOrderTest("test_vendor_item_2"))
     suite.addTest(VendorOrderTest("test_vendor_item_3"))
     suite.addTest(VendorOrderTest("test_vendor_orders"))
+    suite.addTest(VendorOrderTest("test_persist"))
+    suite.addTest(VendorOrderTest("test_persist_multi"))
     runner = unittest.TextTestRunner(verbosity=2)
     runner.run(suite)
 
