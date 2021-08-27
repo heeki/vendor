@@ -1,4 +1,5 @@
-include etc/environment.sh
+include etc/envvars_aws.sh
+include etc/envvars_vendor.sh
 
 vendor.execute:
 	python src/execute.py --type vendor | jq
