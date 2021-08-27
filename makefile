@@ -1,8 +1,12 @@
 include etc/envvars_aws.sh
 include etc/envvars_vendor.sh
 
-vendor.execute:
-	python src/execute.py --type vendor | jq
+vendor.live:
+	python src/execute.py --type live | jq
+vendor.mock:
+	python src/execute.py --type mock | jq
+vendor.test:
+	python src/test.py
 vendor.token:
 	aws --profile vendor sts get-session-token --duration-seconds 900 | jq '{"aws_access_key_id": .Credentials.AccessKeyId, "aws_secret_access_key": .Credentials.SecretAccessKey, "aws_session_token": .Credentials.SessionToken}'
 

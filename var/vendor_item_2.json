@@ -1,0 +1,15 @@
+{
+    "itemSequenceNumber": "00002",
+    "amazonProductIdentifier": "B0748JMABC",
+    "vendorProductIdentifier": "0017817748000",
+    "orderedQuantity": {
+      "amount": 24,
+      "unitOfMeasure": "Eaches",
+      "unitSize": 1
+    },
+    "isBackOrderAllowed": false,
+    "netCost": {
+      "amount": "14162.00",
+      "currencyCode": "INR"
+    }
+}

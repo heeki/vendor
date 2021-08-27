@@ -1,0 +1,19 @@
+{
+    "itemSequenceNumber": "14",
+    "amazonProductIdentifier": "B01LAYXR04",
+    "vendorProductIdentifier": "216501",
+    "orderedQuantity": {
+      "amount": 11,
+      "unitOfMeasure": "Cases",
+      "unitSize": 6
+    },
+    "isBackOrderAllowed": false,
+    "netCost": {
+      "currencyCode": "USD",
+      "amount": "11.52"
+    },
+    "listPrice": {
+      "currencyCode": "USD",
+      "amount": "11.52"
+    }
+}

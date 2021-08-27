@@ -1,7 +1,11 @@
 import json
-from ports.vendor_item import VendorItem
+from ports.vendor_item import VendorItem, VendorItemEncoder
 
-class VendorOrder:
+class VendorOrderEncoder(json.JSONEncoder):
+    def default(self, o):
+        return str(o)
+
+class VendorOrder():
     def __init__(self, order):
         self.purchase_order_number = order["purchaseOrderNumber"]
         self.purchase_order_state = self._validate(order, "purchaseOrderState")
@@ -14,6 +18,7 @@ class VendorOrder:
         self.ship_to_party_id = order["orderDetails"]["shipToParty"]["partyId"]
         self.bill_to_party_id = order["orderDetails"]["billToParty"]["partyId"]
         self.ship_window = self._validate(order["orderDetails"], "shipWindow")
+        self.delivery_window = self._validate(order["orderDetails"], "deliveryWindow")
         self.items = []
         for item in order["orderDetails"]["items"]:
             self.items.append(VendorItem(item))
@@ -25,31 +30,23 @@ class VendorOrder:
             return None
 
     def to_dict(self):
-        internal = {
-            "purchaseOrderNumber": self.purchase_order_number,
-            "orderDetails": {
-                "purchaseOrderDate": self.purchase_order_date,
-                "purchaseOrderType": self.purchase_order_type,
-                "paymentMethod": self.payment_method,
-                "buyingParty": {
-                    "partyId": self.buying_party_id
-                },
-                "sellingParty": {
-                    "partyId": self.selling_party_id
-                },
-                "shipToParty": {
-                    "partyId": self.ship_to_party_id
-                },
-                "billToParty": {
-                    "partyId": self.bill_to_party_id
-                },
-                "items": [json.loads(str(item)) for item in self.items]
-            }
-        }
+        internal = {}
+        internal["purchaseOrderNumber"] = self.purchase_order_number
         if self.purchase_order_state is not None:
             internal["purchaseOrderState"] = self.purchase_order_state
+        internal["orderDetails"] = {}
+        internal["orderDetails"]["purchaseOrderDate"] = self.purchase_order_date
         if self.purchase_order_state_changed_date is not None:
             internal["orderDetails"]["purchaseOrderStateChangedDate"] = self.purchase_order_state_changed_date
+        internal["orderDetails"]["purchaseOrderType"] = self.purchase_order_type
+        internal["orderDetails"]["paymentMethod"] = self.payment_method
+        internal["orderDetails"]["buyingParty"] = {"partyId": self.buying_party_id}
+        internal["orderDetails"]["sellingParty"] = {"partyId": self.selling_party_id}
+        internal["orderDetails"]["shipToParty"] = {"partyId": self.ship_to_party_id}
+        internal["orderDetails"]["billToParty"] = {"partyId": self.bill_to_party_id}
         if self.ship_window is not None:
             internal["orderDetails"]["shipWindow"] = self.ship_window
+        if self.delivery_window is not None:
+            internal["orderDetails"]["deliveryWindow"] = self.delivery_window
+        internal["orderDetails"]["items"] = [item.to_dict() for item in self.items]
         return internal

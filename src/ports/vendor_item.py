@@ -1,6 +1,10 @@
 import json
 
-class VendorItem(dict):
+class VendorItemEncoder(json.JSONEncoder):
+    def default(self, o):
+        return json.dumps(o)
+
+class VendorItem():
     def __init__(self, item):
         self.item_sequence_number = item["itemSequenceNumber"]
         self.amazon_product_identifier = item["amazonProductIdentifier"]
@@ -10,7 +14,13 @@ class VendorItem(dict):
         self.net_cost = item["netCost"]
         self.list_price = self._validate(item, "listPrice")
 
-    def __str__(self):
+    def _validate(self, payload, attribute):
+        if attribute in payload:
+            return payload[attribute]
+        else:
+            return None
+
+    def to_dict(self):
         internal = {
             "itemSequenceNumber": self.item_sequence_number,
             "amazonProductIdentifier": self.amazon_product_identifier,
@@ -21,11 +31,4 @@ class VendorItem(dict):
         }
         if self.list_price is not None:
             internal["listPrice"] = self.list_price
-        return json.dumps(internal)
-
-    def _validate(self, payload, attribute):
-        if attribute in payload:
-            return payload[attribute]
-        else:
-            return None
-
+        return internal
