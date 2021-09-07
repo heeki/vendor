@@ -4,27 +4,21 @@ info:
   description: IDL Vendor API
   version: 0.1.0
 
-# components:
-#   securitySchemes:
+components:
+  securitySchemes:
 #     api-key:
 #       type: "apiKey"
 #       name: "x-api-key"
 #       in: "header"
-#     api-authorizer:
-#       type: apiKey
-#       name: Authorization
-#       in: header
-#       x-amazon-apigateway-authtype: custom
-#       x-amazon-apigateway-authorizer:
-#         authorizerUri:
-#           Fn::Sub: 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${pApiAuthorizer}/invocations'
-#         authorizerPayloadFormatVersion:
-#           Fn::Sub: '${payloadVersion}'
-#         authorizerResultTtlInSeconds: 10
-#         enableSimpleResponses:
-#           Fn::Sub: '${enableSimple}'
-#         identitySource: $request.header.Authorization
-#         type: request
+    api-authorizer:
+      type: apiKey
+      name: Authorization
+      in: header
+      x-amazon-apigateway-authtype: cognito_user_pools
+      x-amazon-apigateway-authorizer:
+        type: cognito_user_pools
+        providerARNs:
+          - Fn::Sub: 'arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${pCognitoUserPool}'
 
 paths:
   /vendor:
@@ -34,9 +28,9 @@ paths:
       responses:
         200:
           description: ok
-      # security:
+      security:
       # - api-key: []
-      # - api-authorizer: []
+      - api-authorizer: []
       x-amazon-apigateway-integration:
         httpMethod: POST
         payloadFormatVersion:
@@ -51,7 +45,8 @@ paths:
         200:
           description: ok
       security:
-      - api-key: []
+      # - api-key: []
+      - api-authorizer: []
       x-amazon-apigateway-integration:
         httpMethod: POST
         payloadFormatVersion:

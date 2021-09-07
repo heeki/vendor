@@ -75,6 +75,9 @@ APIGW_STACK=idl-vendor-api
 APIGW_TEMPLATE=iac/apigw.yaml
 APIGW_OUTPUT=iac/apigw_output.yaml
 APIGW_PARAMS="ParameterKey=pApiStage,ParameterValue=${P_API_STAGE} ParameterKey=pPayloadVersion,ParameterValue=${P_PVERSION} ParameterKey=pVendorTable,ParameterValue=${P_VENDOR_TABLE} ParameterKey=pRequestorRole,ParameterValue=${P_REQUESTOR_ROLE} ParameterKey=pRequestorLayer,ParameterValue=${P_REQUESTOR_LAYER}"
+
+P_FN_VENDOR=[arn_of_created_function]
+P_API_ENDPOINT=[url_of_created_api_endpoint]
 ```
 
 `etc/envvars_vendor.sh`
@@ -87,12 +90,21 @@ export VENDOR_TABLE=[name_of_ddb_table]
 ```
 
 ## Execution
-With those environment files configured, you can then execute the commands found in the `makefile`:
+With those environment files configured, you can then execute the commands found in the `makefile`.
+
+To execute the APIs locally, execute the following commands. Note that to run `make vendor.test`, you will need to source an appropriately configured `etc/envvars_vendor.sh`.
 
 * `make vendor.live`: makes a live call to the SPDS API locally
 * `make vendor.mock`: makes a mock call to test functionality
 * `make vendor.test`: runs local unit tests
+
+To deploy the CloudFormation resources in your AWS account, execute the following commands.
+
 * `make secrets`: creates a stack for Secrets Manager
 * `make ddb`: creates a stack for DynamoDB
 * `make shared`: creates a stack for shared code in Lambda layers
+* `make cognito`: creates a stack for Cognito for auth
 * `make apigw`: creates a stack for a REST API on API Gateway
+
+## Making API calls
+With Cognito in place, the id token from Cognito must be included as the `Authorization` header in the API requests. The `var/cognito_user.sh` helper script will retrieve the auth tokens from Cognito and set an environment variable `P_AUTH_IDTOKEN` with the value of the id token. Then `make apigw.curl.post.2` can be used to make an authorized call to the API.

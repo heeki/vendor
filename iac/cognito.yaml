@@ -1,0 +1,57 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: IDC identity provider
+Transform: AWS::Serverless-2016-10-31
+Parameters:
+  pDomainName:
+    Type: String
+  pCognitoUserName:
+    Type: String
+  pCognitoUserEmail:
+    Type: String
+Resources:
+  CognitoUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+          RequireUppercase: true
+          TemporaryPasswordValidityDays: 1
+  CognitoClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ExplicitAuthFlows:
+        - ALLOW_ADMIN_USER_PASSWORD_AUTH
+        - ALLOW_USER_PASSWORD_AUTH
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+      GenerateSecret: false
+      UserPoolId: !Ref CognitoUserPool
+  CognitoDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain: !Ref pDomainName
+      UserPoolId: !Ref CognitoUserPool
+  CognitoUser:
+    Type: AWS::Cognito::UserPoolUser
+    Properties:
+      Username: !Ref pCognitoUserName
+      UserPoolId: !Ref CognitoUserPool
+      UserAttributes:
+        - Name: email
+          Value: !Ref pCognitoUserEmail
+        - Name: email_verified
+          Value: true
+      ForceAliasCreation: true
+Outputs:
+  outCognitoUserPool:
+    Value: !Ref CognitoUserPool
+  outCognitoClientId:
+    Value: !Ref CognitoClient
+  outCognitoProviderName:
+    Value: !GetAtt CognitoUserPool.ProviderName
+  outCognitoProviderUrl:
+    Value: !GetAtt CognitoUserPool.ProviderURL

@@ -31,6 +31,12 @@ shared.package:
 shared.deploy:
 	sam deploy -t ${SHARED_OUTPUT} --stack-name ${SHARED_STACK} --parameter-overrides ${SHARED_PARAMS} --capabilities CAPABILITY_NAMED_IAM
 
+cognito: cognito.package cognito.deploy
+cognito.package:
+	sam package -t ${COGNITO_TEMPLATE} --output-template-file ${COGNITO_OUTPUT} --s3-bucket ${S3BUCKET}
+cognito.deploy:
+	sam deploy -t ${COGNITO_OUTPUT} --stack-name ${COGNITO_STACK} --parameter-overrides ${COGNITO_PARAMS} --capabilities CAPABILITY_NAMED_IAM
+
 apigw: apigw.package apigw.deploy
 apigw.package:
 	sam package -t ${APIGW_TEMPLATE} --output-template-file ${APIGW_OUTPUT} --s3-bucket ${S3BUCKET}
@@ -48,5 +54,7 @@ apigw.invoke:
 	aws --profile ${PROFILE} lambda invoke --function-name ${P_FN_VENDOR} --invocation-type RequestResponse --payload file://etc/event.json --cli-binary-format raw-in-base64-out --log-type Tail tmp/fn.json | jq "." > tmp/response.json
 	cat tmp/response.json | jq -r ".LogResult" | base64 --decode
 	cat tmp/fn.json | jq
-apigw.curl.post:
+apigw.curl.post.1:
 	curl -s -XPOST -d @etc/local_event.json ${P_API_ENDPOINT} | jq
+apigw.curl.post.2:
+	curl -s -XPOST -d @etc/local_event.json -H "Authorization: ${P_AUTH_IDTOKEN}" ${P_API_ENDPOINT} | jq
