@@ -1,5 +1,6 @@
 # directories
 .vscode
+build
 etc/*.json
 etc/*.sh
 src/__pycache__

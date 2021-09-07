@@ -21,3 +21,32 @@ ddb.package:
 	sam package -t ${DDB_TEMPLATE} --output-template-file ${DDB_OUTPUT} --s3-bucket ${S3BUCKET}
 ddb.deploy:
 	sam deploy -t ${DDB_OUTPUT} --stack-name ${DDB_STACK} --parameter-overrides ${DDB_PARAMS} --capabilities CAPABILITY_NAMED_IAM
+
+shared: shared.package shared.deploy
+shared.package:
+	rm -rf build
+	mkdir -p build/python/lib && rsync -av --delete --exclude src/lib/__pycache__ src/lib/* build/python/lib
+	pip install -r requirements.txt -t build/python
+	sam package -t ${SHARED_TEMPLATE} --output-template-file ${SHARED_OUTPUT} --s3-bucket ${S3BUCKET}
+shared.deploy:
+	sam deploy -t ${SHARED_OUTPUT} --stack-name ${SHARED_STACK} --parameter-overrides ${SHARED_PARAMS} --capabilities CAPABILITY_NAMED_IAM
+
+apigw: apigw.package apigw.deploy
+apigw.package:
+	sam package -t ${APIGW_TEMPLATE} --output-template-file ${APIGW_OUTPUT} --s3-bucket ${S3BUCKET}
+apigw.deploy:
+	sam deploy -t ${APIGW_OUTPUT} --stack-name ${APIGW_STACK} --parameter-overrides ${APIGW_PARAMS} --capabilities CAPABILITY_NAMED_IAM
+apigw.local.invoke:
+	sam local invoke -t ${APIGW_TEMPLATE} --parameter-overrides ${APIGW_PARAMS} --env-vars etc/local_envvars.json -e etc/local_event_api_get.json FnVendor | jq
+apigw.local.api:
+	sam local start-api -t ${APIGW_TEMPLATE} --parameter-overrides ${APIGW_PARAMS} --env-vars etc/local_envvars.json
+apigw.local.curl.get:
+	curl -s -XGET http://127.0.0.1:3000/vendor | jq
+apigw.local.curl.post:
+	curl -s -XPOST -d @etc/local_event.json http://127.0.0.1:3000/vendor | jq
+apigw.invoke:
+	aws --profile ${PROFILE} lambda invoke --function-name ${P_FN_VENDOR} --invocation-type RequestResponse --payload file://etc/event.json --cli-binary-format raw-in-base64-out --log-type Tail tmp/fn.json | jq "." > tmp/response.json
+	cat tmp/response.json | jq -r ".LogResult" | base64 --decode
+	cat tmp/fn.json | jq
+apigw.curl.post:
+	curl -s -XPOST -d @etc/local_event.json ${P_API_ENDPOINT} | jq

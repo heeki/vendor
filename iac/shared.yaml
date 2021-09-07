@@ -1,0 +1,15 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: IDL shared libraries
+Transform: AWS::Serverless-2016-10-31
+Resources:
+  requestor:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      CompatibleRuntimes:
+        - python3.8
+        - python3.9
+      ContentUri: ../build
+      RetentionPolicy: Retain
+Outputs:
+  outRequestor:
+    Value: !Ref requestor

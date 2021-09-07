@@ -25,8 +25,8 @@ def main():
         with open("var/vendor_orders.json") as f:
             response = json.load(f)
         orders = []
-        for order in response["payload"]["orders"]:
-            order = VendorOrder(order)
+        for o in response["payload"]["orders"]:
+            order = VendorOrder(o)
             orders.append(order.to_dict())
         print(json.dumps(orders, cls=VendorOrderEncoder))
 

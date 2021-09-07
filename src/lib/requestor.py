@@ -11,13 +11,12 @@ class Requestor:
         # debug
         self.debug = True
         # aws config
-        self.account_id = os.environ.get("ACCOUNT_ID")
-        self.role_name = os.environ.get("ROLE_NAME", "vendor")
-        self.role_arn = "arn:aws:iam::{}:role/{}".format(self.account_id, self.role_name)
-        self.region = os.environ.get("REGION")
-        self.service = os.environ.get("SERVICE")
+        self.role_arn = os.environ.get("REQUESTOR_ROLE")
+        self.region = os.environ.get("REQUESTOR_REGION")
+        self.service = os.environ.get("REQUESTOR_SERVICE")
         # aws sessions
-        session = boto3.session.Session() if "AWS_LAMBDA_FUNCTION_NAME" in os.environ else boto3.session.Session(profile_name=self.role_name)
+        profile = self.role_arn.split("/")[1]
+        session = boto3.session.Session() if "AWS_LAMBDA_FUNCTION_NAME" in os.environ else boto3.session.Session(profile_name=profile)
         client = session.client("sts")
         response = client.assume_role(
             RoleArn=self.role_arn,
@@ -35,10 +34,10 @@ class Requestor:
         # app credentials
         client = assumed.client("secretsmanager")
         self.auth_grant_type = "refresh_token"
-        self.auth_refresh_token = self._get_secret(client, "/vendor/refresh_token")
-        self.auth_app_id = self._get_secret(client, "/vendor/app_id")
-        self.auth_client_id = self._get_secret(client, "/vendor/client_id")
-        self.auth_client_secret = self._get_secret(client, "/vendor/client_secret")
+        self.auth_refresh_token = self._get_secret(client, "/idl/refresh_token")
+        self.auth_app_id = self._get_secret(client, "/idl/app_id")
+        self.auth_client_id = self._get_secret(client, "/idl/client_id")
+        self.auth_client_secret = self._get_secret(client, "/idl/client_secret")
         self.auth_credentials = self._get_access_token()
 
     def _get_secret(self, client, secret_id):
@@ -86,4 +85,4 @@ class Requestor:
 
         # send request
         response = requests.get(url, params=params, headers=headers, auth=auth)
-        return response.text
+        return response
