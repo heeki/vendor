@@ -39,8 +39,8 @@ A `makefile` has been created to encapsulate all of the commands required for te
 `etc/envvars_aws.sh`
 
 ```bash
-S3BUCKET=higs-serverless
-PROFILE=1527
+S3BUCKET=[your_s3_bucket]
+PROFILE=[your_aws_cli_profile]
 
 P_REFRESH_TOKEN=[refresh_token]
 P_APP_ID=[app_id]
