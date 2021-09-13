@@ -40,6 +40,7 @@ def handler(event, context):
     method = get_method(event)
     if method == "GET":
         response = {}
+        output = build_response(200, "hello")
     elif method == "POST":
         url = "https://sellingpartnerapi-na.amazon.com/vendor/orders/v1/purchaseOrders"
         params = json.loads(event["body"]) if "body" in event else {}
@@ -48,5 +49,5 @@ def handler(event, context):
             for o in response["payload"]["orders"]:
                 order = VendorOrder(o)
                 order.persist()
-    output = build_response(response.status_code, response.text)
+        output = build_response(response.status_code, response.text)
     return output

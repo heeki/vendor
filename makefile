@@ -14,13 +14,13 @@ secrets: secrets.package secrets.deploy
 secrets.package:
 	sam package -t ${SECRETS_TEMPLATE} --output-template-file ${SECRETS_OUTPUT} --s3-bucket ${S3BUCKET}
 secrets.deploy:
-	sam deploy -t ${SECRETS_OUTPUT} --stack-name ${SECRETS_STACK} --parameter-overrides ${SECRETS_PARAMS} --capabilities CAPABILITY_NAMED_IAM
+	sam deploy -t ${SECRETS_OUTPUT} --stack-name ${SECRETS_STACK} --parameter-overrides ${SECRETS_PARAMS} --region ${REGION} --capabilities CAPABILITY_NAMED_IAM
 
 ddb: ddb.package ddb.deploy
 ddb.package:
 	sam package -t ${DDB_TEMPLATE} --output-template-file ${DDB_OUTPUT} --s3-bucket ${S3BUCKET}
 ddb.deploy:
-	sam deploy -t ${DDB_OUTPUT} --stack-name ${DDB_STACK} --parameter-overrides ${DDB_PARAMS} --capabilities CAPABILITY_NAMED_IAM
+	sam deploy -t ${DDB_OUTPUT} --stack-name ${DDB_STACK} --parameter-overrides ${DDB_PARAMS} --region ${REGION} --capabilities CAPABILITY_NAMED_IAM
 
 shared: shared.package shared.deploy
 shared.package:
@@ -29,21 +29,21 @@ shared.package:
 	pip install -r requirements.txt -t build/python
 	sam package -t ${SHARED_TEMPLATE} --output-template-file ${SHARED_OUTPUT} --s3-bucket ${S3BUCKET}
 shared.deploy:
-	sam deploy -t ${SHARED_OUTPUT} --stack-name ${SHARED_STACK} --parameter-overrides ${SHARED_PARAMS} --capabilities CAPABILITY_NAMED_IAM
+	sam deploy -t ${SHARED_OUTPUT} --stack-name ${SHARED_STACK} --parameter-overrides ${SHARED_PARAMS} --region ${REGION} --capabilities CAPABILITY_NAMED_IAM
 
 cognito: cognito.package cognito.deploy
 cognito.package:
 	sam package -t ${COGNITO_TEMPLATE} --output-template-file ${COGNITO_OUTPUT} --s3-bucket ${S3BUCKET}
 cognito.deploy:
-	sam deploy -t ${COGNITO_OUTPUT} --stack-name ${COGNITO_STACK} --parameter-overrides ${COGNITO_PARAMS} --capabilities CAPABILITY_NAMED_IAM
+	sam deploy -t ${COGNITO_OUTPUT} --stack-name ${COGNITO_STACK} --parameter-overrides ${COGNITO_PARAMS} --region ${REGION} --capabilities CAPABILITY_NAMED_IAM
 
 apigw: apigw.package apigw.deploy
 apigw.package:
 	sam package -t ${APIGW_TEMPLATE} --output-template-file ${APIGW_OUTPUT} --s3-bucket ${S3BUCKET}
 apigw.deploy:
-	sam deploy -t ${APIGW_OUTPUT} --stack-name ${APIGW_STACK} --parameter-overrides ${APIGW_PARAMS} --capabilities CAPABILITY_NAMED_IAM
+	sam deploy -t ${APIGW_OUTPUT} --stack-name ${APIGW_STACK} --parameter-overrides ${APIGW_PARAMS} --region ${REGION} --capabilities CAPABILITY_NAMED_IAM
 apigw.local.invoke:
-	sam local invoke -t ${APIGW_TEMPLATE} --parameter-overrides ${APIGW_PARAMS} --env-vars etc/local_envvars.json -e etc/local_event_api_get.json FnVendor | jq
+	sam local invoke -t ${APIGW_TEMPLATE} --parameter-overrides ${APIGW_PARAMS} --env-vars etc/local_envvars.json -e etc/local_event_api_post.json FnVendor | jq
 apigw.local.api:
 	sam local start-api -t ${APIGW_TEMPLATE} --parameter-overrides ${APIGW_PARAMS} --env-vars etc/local_envvars.json
 apigw.local.curl.get:

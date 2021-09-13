@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: IDC vendor services
+Description: IDL vendor services
 Transform: AWS::Serverless-2016-10-31
 Globals:
   Api:
@@ -20,6 +20,8 @@ Parameters:
   pVendorTable:
     Type: String
   pRequestorRole:
+    Type: String
+  pRequestorRegion:
     Type: String
   pRequestorLayer:
     Type: String
@@ -42,7 +44,7 @@ Resources:
   ApiLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub "/aws/apigateway/adc-vendor-api-${Api}"
+      LogGroupName: !Sub "/aws/apigateway/idl-vendor-api-${Api}"
       RetentionInDays: 7
   # Lambda
   FnExecRole:
@@ -94,7 +96,7 @@ Resources:
       Environment:
         Variables:
           REQUESTOR_ROLE: !Ref pRequestorRole
-          REQUESTOR_REGION: !Ref AWS::Region
+          REQUESTOR_REGION: !Ref pRequestorRegion
           REQUESTOR_SERVICE: execute-api
           VENDOR_TABLE: !Ref pVendorTable
       Layers:

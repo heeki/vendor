@@ -20,7 +20,7 @@ def main():
     if args.type == "live":
         r = Requestor()
         response = r.request(url, params)
-        print(response)
+        print(response.text)
     elif args.type == "mock":
         with open("var/vendor_orders.json") as f:
             response = json.load(f)

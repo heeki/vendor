@@ -41,6 +41,7 @@ A `makefile` has been created to encapsulate all of the commands required for te
 ```bash
 S3BUCKET=[your_s3_bucket]
 PROFILE=[your_aws_cli_profile]
+REGION=[your_deployment_region]
 
 P_REFRESH_TOKEN=[refresh_token]
 P_APP_ID=[app_id]
@@ -69,6 +70,7 @@ SHARED_PARAMS="ParameterKey=pName,ParameterValue=${P_NAME}"
 P_API_STAGE=dev
 P_PVERSION=1.0
 P_REQUESTOR_ROLE=[arn_of_vendor_central_role]
+P_REQUESTOR_REGION=[vendor_central_region]
 P_REQUESTOR_LAYER=[arn_of_requestor_layer]
 
 APIGW_STACK=idl-vendor-api
@@ -79,6 +81,8 @@ APIGW_PARAMS="ParameterKey=pApiStage,ParameterValue=${P_API_STAGE} ParameterKey=
 P_FN_VENDOR=[arn_of_created_function]
 P_API_ENDPOINT=[url_of_created_api_endpoint]
 ```
+
+Note that `REGION` specifies the region that the AWS resources will be deployed while `P_REQUESTOR_REGION` specifies the vendor central region, which can be only one of the following three regions: us-east-1, us-west-2, eu-west-1.
 
 `etc/envvars_vendor.sh`
 
@@ -105,6 +109,8 @@ To deploy the CloudFormation resources in your AWS account, execute the followin
 * `make shared`: creates a stack for shared code in Lambda layers
 * `make cognito`: creates a stack for Cognito for auth
 * `make apigw`: creates a stack for a REST API on API Gateway
+
+NOTE: After the stack for Secrets Manager has been deployed, update the vendor central role with permissions to `GetSecretValue` for the set of secrets that were deployed, e.g. `arn:aws:secretsmanager:{region}:{account_id}:secret:/idl/*`.
 
 ## Making API calls
 With Cognito in place, the id token from Cognito must be included as the `Authorization` header in the API requests. The `var/cognito_user.sh` helper script will retrieve the auth tokens from Cognito and set an environment variable `P_AUTH_IDTOKEN` with the value of the id token. Then `make apigw.curl.post.2` can be used to make an authorized call to the API.

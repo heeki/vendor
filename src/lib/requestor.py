@@ -11,15 +11,16 @@ class Requestor:
         # debug
         self.debug = True
         # aws config
-        self.role_arn = os.environ.get("REQUESTOR_ROLE")
-        self.region = os.environ.get("REQUESTOR_REGION")
-        self.service = os.environ.get("REQUESTOR_SERVICE")
+        self.requestor_role = os.environ.get("REQUESTOR_ROLE")
+        self.requestor_region = os.environ.get("REQUESTOR_REGION")
+        self.requestor_service = os.environ.get("REQUESTOR_SERVICE")
+        self.aws_region = os.environ.get("AWS_REGION", self.requestor_region)
         # aws sessions
-        profile = self.role_arn.split("/")[1]
+        profile = self.requestor_role.split("/")[1]
         session = boto3.session.Session() if "AWS_LAMBDA_FUNCTION_NAME" in os.environ else boto3.session.Session(profile_name=profile)
         client = session.client("sts")
         response = client.assume_role(
-            RoleArn=self.role_arn,
+            RoleArn=self.requestor_role,
             RoleSessionName="vendor_session"
         )
         self.aws_access_key_id = response["Credentials"]["AccessKeyId"]
@@ -29,7 +30,7 @@ class Requestor:
             aws_access_key_id=self.aws_access_key_id,
             aws_secret_access_key=self.aws_secret_access_key,
             aws_session_token=self.aws_session_token,
-            region_name=self.region
+            region_name=self.aws_region
         )
         # app credentials
         client = assumed.client("secretsmanager")
@@ -78,10 +79,10 @@ class Requestor:
             "aws_access_key_id": self.aws_access_key_id,
             "aws_secret_access_key": self.aws_secret_access_key,
             "aws_session_token": self.aws_session_token,
-            "region": self.region,
-            "service": self.service
+            "requestor_region": self.requestor_region,
+            "requestor_service": self.requestor_service
         })) if self.debug else None
-        auth = AWS4Auth(self.aws_access_key_id, self.aws_secret_access_key, self.region, self.service, session_token=self.aws_session_token)
+        auth = AWS4Auth(self.aws_access_key_id, self.aws_secret_access_key, self.requestor_region, self.requestor_service, session_token=self.aws_session_token)
 
         # send request
         response = requests.get(url, params=params, headers=headers, auth=auth)
