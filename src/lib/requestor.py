@@ -9,7 +9,7 @@ from requests_aws4auth import AWS4Auth
 class Requestor:
     def __init__(self):
         # debug
-        self.debug = True
+        self.debug = False
         # aws config
         self.requestor_role = os.environ.get("REQUESTOR_ROLE")
         self.requestor_region = os.environ.get("REQUESTOR_REGION")

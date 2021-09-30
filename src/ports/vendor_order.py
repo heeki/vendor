@@ -3,13 +3,14 @@ import json
 import os
 from ports.vendor_item import VendorItem, VendorItemEncoder
 from adapters.dynamodb import AdptDynamoDB
+from adapters.sqs import AdptSQS
 
 class VendorOrderEncoder(json.JSONEncoder):
     def default(self, o):
         return str(o)
 
 class VendorOrder():
-    def __init__(self, order):
+    def __init__(self, session, order):
         self.purchase_order_number = order["purchaseOrderNumber"]
         self.purchase_order_state = self._validate(order, "purchaseOrderState")
         self.purchase_order_date = order["orderDetails"]["purchaseOrderDate"]
@@ -26,7 +27,7 @@ class VendorOrder():
         for item in order["orderDetails"]["items"]:
             self.items.append(VendorItem(item))
         # aws session
-        self.session = boto3.session.Session()
+        self.session = session
         self.table = os.environ.get("VENDOR_TABLE")
 
     def _validate(self, payload, attribute):

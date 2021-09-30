@@ -25,6 +25,8 @@ Parameters:
     Type: String
   pRequestorLayer:
     Type: String
+  pPOQueueUrl:
+    Type: String
 Resources:
   Api:
     Type: AWS::Serverless::Api
@@ -87,6 +89,14 @@ Resources:
                 Action:
                   - sts:AssumeRole
                 Resource: !Ref pRequestorRole
+        - PolicyName: sqs
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                Resource: !Join [':', ['arn:aws:sqs:*', !Select [3, !Split ['/', !Ref pPOQueueUrl]], !Select [4, !Split ['/', !Ref pPOQueueUrl]]]]
   FnVendor:
     Type: AWS::Serverless::Function
     Properties:
@@ -99,6 +109,7 @@ Resources:
           REQUESTOR_REGION: !Ref pRequestorRegion
           REQUESTOR_SERVICE: execute-api
           VENDOR_TABLE: !Ref pVendorTable
+          PO_QUEUE_URL: !Ref pPOQueueUrl
       Layers:
         - !Ref pRequestorLayer
   FnVendorLogs:

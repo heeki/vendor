@@ -2,11 +2,15 @@ import base64
 import boto3
 import json
 import os
+from adapters.sqs import AdptSQS
 from lib.requestor import Requestor
 from ports.vendor_order import VendorOrder, VendorOrderEncoder
+from lib.encoders import DateTimeEncoder
 
 # initialization
 r = Requestor()
+session = boto3.session.Session()
+queue_url = os.environ.get("PO_QUEUE_URL")
 
 # helper functions
 def build_response(code, body):
@@ -45,9 +49,16 @@ def handler(event, context):
         url = "https://sellingpartnerapi-na.amazon.com/vendor/orders/v1/purchaseOrders"
         params = json.loads(event["body"]) if "body" in event else {}
         response = r.request(url, params)
+        if response.status_code == 403:
+            message = json.dumps(json.loads(response.text))
+        else:
+            message = json.dumps(response.text)
+        print(message)
+        sqs = AdptSQS(session, queue_url)
+        sqs.send_message(message)
         if "payload" in response and "orders" in response["payload"]:
             for o in response["payload"]["orders"]:
-                order = VendorOrder(o)
+                order = VendorOrder(session, o)
                 order.persist()
         output = build_response(response.status_code, response.text)
     return output
