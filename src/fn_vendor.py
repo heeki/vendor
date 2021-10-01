@@ -49,10 +49,9 @@ def handler(event, context):
         url = "https://sellingpartnerapi-na.amazon.com/vendor/orders/v1/purchaseOrders"
         params = json.loads(event["body"]) if "body" in event else {}
         response = r.request(url, params)
-        if response.status_code == 403:
-            message = json.dumps(json.loads(response.text))
-        else:
-            message = json.dumps(response.text)
+        # if response.status_code == 403:
+        #     message = json.dumps(json.loads(response.text))
+        message = json.dumps(json.loads(response.text))
         print(message)
         sqs = AdptSQS(session, queue_url)
         sqs.send_message(message)
