@@ -63,7 +63,19 @@ class Requestor:
         print(json.dumps(credentials, cls=DateTimeEncoder)) if self.debug else None
         return credentials
 
-    def request(self, url, params):
+    def refresh_access_token(self):
+        """ for use when access token has expired and endpoint is returning a 403 error
+        """
+        self.auth_credentials = self._get_access_token()
+
+    def request(self, url, method="GET", params=None, data=None):
+        """ generic request method for making sigv4 authenticated api requests
+        arguments:
+        - url: request endpoint
+        - method: rest method, e.g. GET, POST, PUT, DELETE
+        - params: needed only with GET
+        - data: needed only with POST, PUT, DELETE
+        """
         # configure headers
         headers = {
             "accept": "application/json",
@@ -85,5 +97,15 @@ class Requestor:
         auth = AWS4Auth(self.aws_access_key_id, self.aws_secret_access_key, self.requestor_region, self.requestor_service, session_token=self.aws_session_token)
 
         # send request
-        response = requests.get(url, params=params, headers=headers, auth=auth)
+        if method == "GET" and params is not None:
+            response = requests.get(url, params=params, headers=headers, auth=auth)
+        if method == "POST" and data is not None:
+            response = requests.post(url, headers=headers, auth=auth, data=data)
+        elif method == "PUT" and data is not None:
+            response = requests.put(url, headers=headers, auth=auth, data=data)
+        elif method == "DELETE" and data is not None:
+            response = requests.delete(url, headers=headers, auth=auth, data=data)
+        else:
+            response = None
+
         return response
